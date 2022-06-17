@@ -4,7 +4,7 @@ title: useImperativeHandle
 
 <Intro>
 
-`useImperativeHandle` customizes the instance value that is exposed to the parent components when using `ref`.
+`useImperativeHandle` customizes the value that is exposed to the parent components when using ref.
 
 ```js
 useImperativeHandle(ref, createHandle, [deps])
@@ -12,133 +12,101 @@ useImperativeHandle(ref, createHandle, [deps])
 </Intro>
 
 - [Usage](#usage)
-  - [Exposing required functions to a parent component](#exposing-required-functions-to-a-parent-component)
-  - [Using `forwardRef` hook with `useImperativeHandle`](#Using-forwardref-hook-with-useimperativehandle)
+  - [Modifying the ref of a parent component by a child component](#modifying-the-ref-of-a-parent-component-by-a-child-component)
 - [Reference](#reference)
   - [`useImperativeHandle(ref, createHandle, [deps])`](#useimperativehandle)
-
 
 ## Usage {/*usage*/}
 
 
-### Exposing required functions to a parent component {/*exposing-required-functions-to-a-parent-component*/}
+### Modifying the ref of a parent component by a child component {/*modifying-the-ref-of-a-parent-component-by-a-child-component*/}
 
-`useImperativeHandle` allows child components to determine which functions are exposed to a parent component when using `ref`.
+Add `useImperativeHandle` to customize which value the parent component will receive when it tries to get a ref to a child component. To use this Hook, you need to first opt into exposing the ref at all, which you can do with `forwardRef`.
 
-For example, blur(), focus(), etc. You can also expose custom-built functions to a parent component.
+For example, here `MyInput` component exposes an object with a single `focus` method:
 
-`useImperativeHandle` receives a `ref` as the first argument from the hook[`forwardRef`](api/forwardref). And within the `useImperativeHandle` only the `focus()` method is exposed.
-
-Assign the current value of the `realInputRef` to focus().
-
-```js {4,9}
-
-import {forwardRef, useRef, useImperativeHandle} from 'react';
-
+```js {5-9}
 const MyInput = forwardRef((props, ref) => {
-  const realInputRef = useRef(null);
-  useImperativeHandle(ref, () => ({
-    // Only expose focus and nothing else
-    focus() {
-      realInputRef.current.focus();
-    },
-  }));
-  return <input {...props} ref={realInputRef} />;
-});
-
-//...
-
-```
-
-Next, `realInputRef` inside `MyInput` holds the actual input DOM node. However, `useImperativeHandle` instructs React to provide your own special object as the value of a ref to the parent component.
-
-
-```js {12}
-
-import {forwardRef, useRef, useImperativeHandle} from 'react';
-
-const MyInput = forwardRef((props, ref) => {
-  const realInputRef = useRef(null);
-  useImperativeHandle(ref, () => ({
-    // Only expose focus and nothing else
-    focus() {
-      realInputRef.current.focus();
-    },
-  }));
-  return <input {...props} ref={realInputRef} />;
-});
-
-//...
-```
-
-The `ref` that is returned to the parent component is the modified value from the child component. When the `onClick` event of DOM node i.e. `<button>` is triggered, the focus is set on the `<MyInput component>`.
-
-
-```js {10}
-export default function Form() {
   const inputRef = useRef(null);
+  const { label, ...otherProps } = props;
+
+  useImperativeHandle(ref, () => ({
+    focus() {
+      inputRef.current.focus();
+    }
+  }))
+
+  return (
+    <label>
+      {label}
+      <input {...otherProps} ref={inputRef} />
+    </label>
+  );
+});
+```
+
+As a result, the parent component can call `focus()` on `MyInput` but will not have access to the underlying `<input>` DOM node.
+
+```js {5,10}
+function Form() {
+  const ref = useRef(null);
 
   function handleClick() {
-    inputRef.current.focus();
+    ref.current.focus();
   }
 
   return (
     <>
-      <MyInput ref={inputRef} />
-      <button onClick={handleClick}>
-        Focus the input
-      </button>
+      <MyInput ref={ref} />
+      <button onClick={handleClick}>Focus</button>
     </>
-  );
+  )
 }
-
 ```
 
-### `useImperativeHandle` with `forwardRef` hook {/*useimperativehandle-with-forwardref-hook*/}
+The object inside `inputRef.current` is the object that you returned from the function in the second argument to `useImperativeHandle` in `MyInput`.
 
-
-We recommend that you use `useImperativeHandle` with [`forwardRef`](api/forwardref) and avoid using `ref`. `forwardRef` forwards the `ref` from the parent component to the child component, and `useImperativeHandle` can modify the ref and expose the necessary functions-- this facilitates lightweight bidirectional flow.
+You won't use this technique very often. Still it's helpful if you want to expose some imperative methods like focusing, scrolling, or triggering animations to the parent component without giving the parent full access to the underlying DOM node.
 
 <Sandpack>
 
-``` js
-
-import {
-  forwardRef,
-  useRef,
-  useImperativeHandle
-} from 'react';
+```js
+import React, {useImperativeHandle, useRef ,forwardRef} from "react";
 
 const MyInput = forwardRef((props, ref) => {
-  const realInputRef = useRef(null);
+  const inputRef = useRef(null);
+  const { label, ...otherProps } = props;
+
   useImperativeHandle(ref, () => ({
-    // Only expose focus and nothing else
     focus() {
-      realInputRef.current.focus();
-    },
-  }));
-  return <input {...props} ref={realInputRef} />;
+      inputRef.current.focus();
+    }
+  }))
+
+  return (
+    <label>
+      {label}
+      <input {...otherProps} ref={inputRef} />
+    </label>
+  );
 });
 
 export default function Form() {
-  const inputRef = useRef(null);
+  const ref = useRef(null);
 
   function handleClick() {
-    inputRef.current.focus();
+    ref.current.focus();
   }
 
   return (
     <>
-      <MyInput ref={inputRef} />
-      <button onClick={handleClick}>
-        Focus the input
-      </button>
+      <MyInput ref={ref} />
+      <button onClick={handleClick}>Focus</button>
     </>
-  );
+  )
 }
 
 ```
-
 </Sandpack>
 
 ## Reference {/*reference*/}
@@ -155,9 +123,9 @@ useImperativeHandle(ref, createHandle, [deps])
 ### Parameters {/*parameters*/}
 **ref**- `useImperativeHandle` accepts a `ref`  from the parent component as a parameter.
 
-**function**- A `createhandle` function whose return value replaces the stored value in the `ref` object and the whole function is updated when the dependency array changes.
+**function**- A `createhandle` function whose return value replaces the stored value in the `ref` object, and the whole function is updated when the dependency array changes.
 
-**dependency array**- A array of dependency can be passed to determine when the `ref` value in a function gets updated. If one of the dependencies changes then the `ref` value is updated.
+**dependency array**- A array of dependencies can be passed to determine when the `ref` value in a function gets updated. If one of the dependencies changes, then the `ref` value is updated.
 
 ### Returns {/*returns*/}
 
