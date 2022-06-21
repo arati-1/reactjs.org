@@ -36,7 +36,7 @@
               "path": "/apis/usestate"
             },
             {
-              "title": "forwardref",
+              "title": "forwardRef()",
               "path": "/apis/forwardref"
             }
           ]

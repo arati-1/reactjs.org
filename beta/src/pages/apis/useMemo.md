@@ -7,86 +7,257 @@ title: useMemo
 `useMemo` is a React Hook that returns a [memoized](https://en.wikipedia.org/wiki/Memoization) value.
 
 ```js
-const memoizedvalue= useMemo(() => expensiveFunction(count), [count]);
+const memoizedvalue= useMemo(() => computeExpensiveFunction(a,b), [a,b]);
 ```
 
 </Intro>
 
 - [Usage](#usage)
-  - [Skip expensive recalculation on every render](#skip-expensive-recalculation-on-every-render)
-  - [Preserving referential identity](#preserving-referential-identity)
+  - [Skip expensive recalculations](#skip-expensive-recalculations)
+  - [Skip re-render](#skip-re-render)
 - [Reference](#reference)
-  - [`useMemo(() => computeExpensiveValue(a, b), [a, b])`](#usememo)
+  - [`useMemo(() => computeExpensiveFunction(a, b), [a, b])`](#usememo)
 - [Troubleshooting](#troubleshooting)
+  - [Everytime my component renders `useMemo` is triggered](#everytime-my-component-renders-useMemo-is-triggered)
+
 
 ---
 
 ## Usage {/*usage*/}
 
-### Skip expensive recalculation on every render {/*skip-expensive-recalculation-on-every-render*/}
+### Skip expensive recalculations {/*skip-expensive-recalculations*/}
 
 Call `useMemo` at the top level of your component to declare one or more memoized variables.
 
-```js
+```js {5}
 import {useMemo} from 'react';
 
 export default function App(){
 
-const changedCount = useMemo( () => { return someExpensiveFunction(count)}, [count])
+const visibleTodos = useMemo(() => getVisibleTodos(todos, tab), [todos, tab]);
 
 //...
 ```
 
-* `useMemo` conventionally takes two arguments -- an “expensiveCalculations” function and an array of dependencies.
+Wrap the function that has the expensive calculations using `useMemo`, so that when the dependencies are unchanged, the calculation of the expensive function is skipped.
 
-* `useMemo` recomputes and returns the memoized value when one of the dependency values changes on re-render
+In the example below, the function `getVisibleTodos` runs only when one of the dependencies `todos` or `tab` change, and the memoized value is stored in `visibleTodos`.
 
-* Wrap the function that has expensive calculations using useMemo so that when the dependency is unchanged, the expensive calculations are not performed on the re-render of the component.
+``` js [4]
+//...
+const [todos, setTodos] = useState(createInitialTodos);
+const [tab, setTab] = useState("all");
+const visibleTodos = useMemo(() => getVisibleTodos(todos, tab), [todos, tab]);
 
-``` js
-const changedCount = useMemo( () => { return someExpensiveFunction(count) } , [count] )
+function getVisibleTodos(todos, tab) {
+  console.log("Running getVisibleTodos for " + todos.length + " todos");
+  return todos.filter((t) => {
+    if (tab === "completed") {
+      return t.completed;
+    }
+    return true;
+  });
+}
+
+//...
+
 ```
 
-<Recipes titleText="Examples of skipping expensive recalculation on every render" titleId="examples-skiprecal">
+### Skip re-render of components {/*skip-re-render-of-components*/}
 
-### A count incrementer {/*a-count-incrementer*/}
+Often you would want to skip re-render of components when not necessary.
 
-This example uses a combination of state and memo. Both `count` and `fontcolor` are state variables because they are used for rendering.
+`useMemo` helps in skipping re-render of the components. Avoiding component re-renders can be a boost to the overall performace.
 
-Here, we have an input with the type `number`. Every time there is an increment in the number, an expensive function is calculated, and there is a delay in displaying the calculted result in the `div`.
+In the example below, you can see that the `TodoList` component is rendered everytime there is a change in the `input` field. Also, `visibleTodos` are calculated on every render. The change in input should ideally have no effect on the `visibleTodos`.
 
-But even when we try to change just the font color of the calculated number the expensive function is recalculated even though there is no change in the value, which is not desired.
+```js {30-31,53-57,60}
+import React, { useState, useCallback } from "react";
+import TodoList from "./TodolistComponent";
 
-Hence, the expensive function is wrapped using the `useMemo` hook. It compares the dependent value, and only if the value is changed then the expensive function is to be recalculated.
+function createInitialTodos() {
+  const initialTodos = [];
+  for (let i = 0; i < 50; i++) {
+    initialTodos.push({
+      id: i,
+      text: "Item " + (i + 1),
+      completed: false
+    });
+  }
+  return initialTodos;
+}
+
+function getVisibleTodos(todos, tab) {
+  console.log("Running getVisibleTodos for " + todos.length + " todos");
+  return todos.filter((t) => {
+    if (tab === "completed") {
+      return t.completed;
+    }
+
+    return true;
+  });
+}
+
+export default function App() {
+  const [todos, setTodos] = useState(createInitialTodos);
+  const [tab, setTab] = useState("all");
+  const [draft, setDraft] = useState("");
+  const visibleTodos = getVisibleTodos(todos, tab);
+
+  const toggleTodo = useCallback((id) => {
+    setTodos((todos) =>
+      todos.map((t) => {
+        if (t.id === id) {
+          return {
+            ...t,
+            completed: !t.completed
+          };
+        } else {
+          return t;
+        }
+      })
+    );
+  }, []);
+
+  return (
+    <>
+      <button onClick={() => setTab("all")}>All</button>
+      <button onClick={() => setTab("completed")}>Completed</button>
+      <hr />
+      <input
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value);
+        }}
+      />
+      <hr />
+      <TodoList visibleTodos={visibleTodos} toggleTodo={toggleTodo} />
+    </>
+  );
+}
+```
+
+Wrap the `getVisibleTodos` in the useMemo hook and avoid the re-render of the `TodoList` component.
+
+```js {7}
+//...
+
+export default function App() {
+  const [todos, setTodos] = useState(createInitialTodos);
+  const [tab, setTab] = useState("all");
+  const [draft, setDraft] = useState("");
+  const visibleTodos = useMemo(() => getVisibleTodos(todos, tab), [todos, tab]);
+
+  //...
+
+```
+To verify whether the `TodoList` is re-rendering on each stroke of input, check the console logs.
+
+<Recipes titleText="Example of skipping expensive recalculation and re-render of components" titleId="examples-skiprecal">
+
+### A todolist {/*a-todolist*/}
+
+The following example uses a combination of hooks such as, useState, useCallback and useMemo. `todos`, `tab`, and `draft` are state variables as they are used to track and set the state of the above said variables.
+
+Here, there are two tabs named `All` and `Completed`. The todolist is popoulated in the `All` tab initially. When a todo item is check as compeleted, that item can now be listed in `Completed` tab.
+
+Using `useMemo` hook you can skip the expensive recalculation of `getVisibleTodos` function. Also, it skips the re-render of the components when you enter somethin in the input field.
 
 <Sandpack>
 
-```js
-import React, {useState, UseMemo, useMemo, useEffect} from 'react'
+```js App.js {3,4}
 
-export default function App(){
-const[count, setCount] = useState(0)
-const[fontcolor, setFontColor] = useState(true)
-const changedCount =
-  useMemo(()=> { return someExpensiveFunction(count)}, [count])
-const newColor=
-   {color: fontcolor ? 'blue' : 'red'}
+import React, { useState, useMemo, useCallback } from "react";
+import TodoList from './TodolistComponent';
 
-return(
-  <>
-  <input type= "number"  value={count} onChange =
-    {(e => setCount(e.target.value))}/>
-  <button onClick= {()=>
-    setFontColor(fontcolor => !fontcolor)}> Change font color</button>
-  <div style={newColor}>{changedCount}</div>
-  </>
-)
+function createInitialTodos() {
+  const initialTodos = [];
+  for (let i = 0; i < 50; i++) {
+    initialTodos.push({
+      id: i,
+      text: "Item " + (i + 1),
+      completed: false
+    });
+  }
+  return initialTodos;
 }
 
-function someExpensiveFunction(number){
-  for(let i=0 ; i<200000; i++){}
-  return number * 2
+function getVisibleTodos(todos, tab) {
+  console.log("Running getVisibleTodos for " + todos.length + " todos");
+  return todos.filter((t) => {
+    if (tab === "completed") {
+      return t.completed;
+    }
+    return true;
+  });
 }
+
+export default function App() {
+  const [todos, setTodos] = useState(createInitialTodos);
+  const [tab, setTab] = useState("all");
+  const [draft, setDraft] = useState("");
+  const visibleTodos = useMemo(() => getVisibleTodos(todos, tab), [todos, tab]);
+
+  const toggleTodo = useCallback((id) => {
+    setTodos((todos) =>
+      todos.map((t) => {
+        if (t.id === id) {
+          return {
+            ...t,
+            completed: !t.completed
+          };
+        } else {
+          return t;
+        }
+      })
+    );
+  }, []);
+
+  return (
+    <>
+      <button onClick={() => setTab("all")}>All</button>
+      <button onClick={() => setTab("completed")}>Completed</button>
+      <hr />
+      <input
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value);
+        }}
+      />
+      <hr />
+      <TodoList visibleTodos={visibleTodos} toggleTodo={toggleTodo} />
+    </>
+  );
+}
+
+```
+```js TodolistComponent.js
+
+import { memo } from "react";
+
+export default function TodoList({ visibleTodos, toggleTodo }) {
+    console.log("TodoList re-render");
+    return (
+      <ul>
+        {visibleTodos.map((item) => (
+          <li key={item.id}>
+            <label>
+              <input
+                type="checkbox"
+                checked={item.completed}
+                onChange={(e) => {
+                  toggleTodo(item.id);
+                }}
+              />
+              {item.text}
+            </label>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  TodoList = memo(TodoList);
+
 ```
 
 </Sandpack>
@@ -95,47 +266,10 @@ function someExpensiveFunction(number){
 
 </Recipes>
 
-### Preserving referential identity {/*preserving-referential-identity*/}
-
-`useMemo` plays a vital role in preserving referential identity.
-
-To demonstrate the above point, let us consider the following code that uses the useEffect hook with a dependency that is an object.
-
-```js
-export default function App(){
-
-  const newColor = {
-
-  color: fontcolor ? 'blue' : 'red'
-
-}
-
-useEffect( () => {
-
-  console.log(" Font color changed");
-
-},[newColor])
-
-```
-In the above code snippet, the `useEffect` hook has a dependency that is an object, and on every render, the memory allocation for the object varies. So, on every render, when `useEffect` compares the dependencies, they are different as the hook is comparing the object's reference as opposed to the value, which makes the `useEffect` log the ("Font color changed") statement every time.
-
-The solution to come out of the situation is to wrap the object inside memoization with `useMemo` as follows:
-
-```js
-const newColor= useMemo(() => {
-
-return {
-
-  color: fontcolor ? 'blue' : 'red'}
-
-},[fontcolor])
-
-```
-
 <DeepDive title="Pros and Cons of using `useMemo`">
 Pros
 
-`useMemo` will only recompute the memoized value when one of the dependencies has changed. So, the re-computation of an expensive function on every render is not necessary.
+`useMemo` only recomputes the memoized value when one of the dependencies has changed. So, the re-computation of an expensive function on every render is not necessary.
 
 Cons
 
@@ -145,50 +279,6 @@ Every time a component is rendered:
 
 </DeepDive>
 
-<Recipes titleText="Examples of preserving referential identity" titleId="examples-referentialid">
-
-### An incrementer with {/*an-incrementer*/}
-
-This example derives from the *A count incrementer* example and extends it to use the `useEffect` hook.
-
-<Sandpack>
-
-```js
-import React, {useState, UseMemo, useMemo, useEffect} from 'react'
-
-export default function App(){
-const[count, setCount] = useState(0)
-const[fontcolor, setFontColor] = useState(true)
-const newColor= useMemo(() => {
-  return {color: fontcolor ? 'blue' : 'red'}
-},[fontcolor])
-
-useEffect( () => {
-  console.log("Font color changed");
-},[newColor])
-
-return(
-  <>
-  <input type= "number"  value={count} onChange =
-    {(e => setCount(e.target.value))}/>
-  <button onClick= {()=>
-    setFontColor(fontcolor => !fontcolor)}> Change font color</button>
-  <div style={newColor}>{changedCount}</div>
-  </>
-)
-}
-
-function someExpensiveFunction(number){
-  for(let i=0 ; i<2000000; i++){}
-  return number * 2
-}
-```
-
-</Sandpack>
-
-<Solution />
-
-</Recipes>
 
 ## Reference {/*reference*/}
 
@@ -213,3 +303,28 @@ import {useMemo} from 'react';
 
 
 ## Troubleshooting {/*troubleshooting*/}
+
+### Everytime my component renders `useMemo` is triggered {/*everytime-my-component-renders-useMemo-is-triggered*/}
+
+There can be scenarios where the `useMemo` calculates the expensive function on each render:
+
+1. You have dependecies that change on each render. To debug the issue try to Console log the dependencies and check if they are changing or are same on every render.
+
+
+2. You might have missed specifying the dependencies with `useMemo`, which basically forces the memoized value to be recalculated everytime.
+
+```js {11}
+// 🚩 Doesn't work: no dependencies
+
+import React, {useState, UseMemo, useEffect} from 'react'
+
+export default function App(){
+
+const[count, setCount] = useState(0)
+
+const[fontcolor, setFontColor] = useState(true)
+
+const changedCount = useMemo(()=> { return someExpensiveFunction(count)}, [])
+
+//...
+```
