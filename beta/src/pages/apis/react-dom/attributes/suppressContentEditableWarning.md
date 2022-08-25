@@ -4,7 +4,7 @@ title: suppressContentEditableWarning
 
 <Intro>
 
-When an element with children is marked as `contentEditable`, a warning is generated because it won't work. You can suppress that warning by setting the `suppressContentEditableWarning` attribute to `true`.
+When an element with children is marked as `contentEditable`, a warning is generated. You can suppress that warning by setting the `suppressContentEditableWarning` attribute to `true`.
 
 </Intro>
 
