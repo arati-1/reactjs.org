@@ -29,6 +29,10 @@ In this example, we demonstrate the usage of the `style` attribute with a `<div>
 
 Observe that the `backgroundColor` property is camelCased as opposed to the usual hyphenated way.
 
+<Note>
+If you want to apply the inline style, then observe the example. Here, the `style` attribute has the styling properties passed within the **two sets of curly braces**.
+</Note>
+
 <Sandpack>
 
 ``` js App.js
