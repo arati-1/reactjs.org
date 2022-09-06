@@ -53,7 +53,7 @@ Let's look at each of these steps in detail.
 
 ### Step 1: Declare an Effect {/*step-1-declare-an-effect*/}
 
-To declare an Effect in your component, import the [`useEffect` Hook](/api/useeffect) from React:
+To declare an Effect in your component, import the [`useEffect` Hook](/apis/react/useEffect) from React:
 
 ```js
 import { useEffect } from 'react';
@@ -720,7 +720,7 @@ In development, `logVisit` will be called twice for every URL, so you might be t
 
 **In production, there will be no duplicate visit logs.**
 
-To debug the analytics events you're sending, you can deploy your app to a staging environment (which runs in production mode) or temporarily opt out of [Strict Mode](/api/strictmode) and its development-only remounting checks. You may also send analytics from the route change event handlers instead of Effects. For even more precise analytics, [intersection observers](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API) can help track which components are in the viewport and how long they remain visible.
+To debug the analytics events you're sending, you can deploy your app to a staging environment (which runs in production mode) or temporarily opt out of [Strict Mode](/apis/react/StrictMode) and its development-only remounting checks. You may also send analytics from the route change event handlers instead of Effects. For even more precise analytics, [intersection observers](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API) can help track which components are in the viewport and how long they remain visible.
 
 ### Not an Effect: Initializing the application {/*not-an-effect-initializing-the-application*/}
 
@@ -970,7 +970,7 @@ export default function MyInput({ value, onChange }) {
   const ref = useRef(null);
 
   // TODO: This doesn't quite work. Fix it.
-  // ref.current.focus()    
+  // ref.current.focus()
 
   return (
     <input
@@ -1365,7 +1365,7 @@ body {
 
 <Solution>
 
-When [Strict Mode](/apis/StrictMode) is on (like in the sandboxes on this site), React remounts each component once in development. This causes the interval to be set up twice, and this is why each second the counter increments twice.
+When [Strict Mode](/apis/react/StrictMode) is on (like in the sandboxes on this site), React remounts each component once in development. This causes the interval to be set up twice, and this is why each second the counter increments twice.
 
 However, React's behavior is not the *cause* of the bug: the bug already exists in the code. React's behavior makes the bug more noticeable. The real cause is that this Effect starts a process but doesn't provide a way to clean it up.
 
@@ -1570,4 +1570,3 @@ In addition to ignoring the result of an outdated API call, you can also use [`A
 </Solution>
 
 </Challenges>
-
