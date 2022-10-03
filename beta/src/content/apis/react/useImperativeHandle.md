@@ -19,7 +19,7 @@ useImperativeHandle(ref, createHandle, [deps])
 
 Add `useImperativeHandle` to customize the value the parent component receives when it tries to get a `ref` from a child component. To use this Hook, you must first opt into exposing the ref, which you can do with [`forwardRef`](/apis/react/forwardRef).
 
-For example, here `MyInput` component exposes an object with a single `focus` method:
+For example, here the `MyInput` component exposes an object with a single `focus` method:
 
 ```js {5-9}
 const MyInput = forwardRef((props, ref) => {
@@ -119,11 +119,11 @@ import { useImperativeHandle } from 'react';
 useImperativeHandle(ref, createHandle, [deps])
 ```
 #### Parameters {/*parameters*/}
-* `ref`- `useImperativeHandle` accepts a `ref` passed by the parent component as a parameter.
+* `ref`: `useImperativeHandle` accepts a `ref` passed by the parent component as a parameter.
 
-* `createHandle`- A handler function whose return value replaces the stored value in the `ref` object, and the whole function is updated when the dependency list changes. On subsequent renders, React will return the same `ref` again if the `dependencies` have not changed since the last render.
+* `createHandle`: A handler function whose return value replaces the stored value in the `ref` object, and the whole function is updated when the dependency list changes. On subsequent renders, React will return the same `ref` again if the `dependencies` have not changed since the last render.
 
-* `dependencies`- The list of all reactive values referenced inside of the `createHandle` code to determine when the `ref` value inside gets updated. If one of the dependencies changes, then the `ref` value is updated.
+* `dependencies`: The list of all reactive values referenced inside of the `createHandle` code to determine when the `ref` value inside gets updated. If one of the dependencies changes, then the `ref` value is updated.
 
 #### Returns {/*returns*/}
 
